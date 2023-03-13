@@ -1,0 +1,109 @@
+{
+    "type": "object",
+    "properties": {
+        "input_file": { "type": "string" },
+        "columns": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "categorical_columns": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "text_columns": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "numerical_columns": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "predict_column": { "type": "string" },
+        "target_map": {
+            "type": "object",
+            "properties": { "^": { "type": "integer" } }
+        },
+        "drop_rows_when_missing": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "impute_when_missing": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "feature": { "type": "string" },
+                    "method": { "type": "string", "enum": ["MEAN", "MEDIAN", "CREATE_CATEGORY", "MODE"] },
+                    "constant": { }
+                }
+            }
+        },
+        "test_size": { "type": "number" },
+        "rescale_features": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "feature": { "type": "string" },
+                    "method": { "type": "string", "enum": ["MINMAX", "AVGSTD"] }
+                }
+            }
+        },
+        "undersampling_ratio": { "type": "number" },
+        "algorithms": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "algorithm": {
+                        "type": "string",
+                        "enum": ["KNN", "DecisionTree", "RandomForest"]
+                    },
+                    "impute": { "type": "string", "enum": ["true", "false"] },
+                    "drop": { "type": "string", "enum": ["true", "false"] },
+                    "preprocess_categorical": { "type": "string", "enum": ["true", "false"] },
+                    "preprocess_text": { "type": "string", "enum": ["true", "false"] },
+                    "preprocess_numerical": { "type": "string", "enum": ["true", "false"] },
+                    "rescale": { "type": "string", "enum": ["true", "false"] },
+                    "maximize_output": {
+                        "type": "object",
+                        "properties": {
+                            "property": {
+                                "type": "string",
+                                "enum": ["precision", "recall", "f1-score"]
+                            },
+                            "average": {
+                                "type": "string",
+                                "enum": ["avg", "macro", "weighted-avg"]
+                            }
+                        },
+                        "required": ["property"]
+                    }
+                },
+                "required": ["algorithm", "maximize_output"]
+            }
+        },
+        "knn_config": {
+            "type": "object",
+            "properties": {
+                "minK": { "type": "integer" },
+                "maxK": { "type": "integer" },
+                "stepK": { "type": "integer" },
+                "minP": { "type": "integer" },
+                "maxP": { "type": "integer" },
+                "weights": { "type": "string", "enum": ["uniform", "distance"] }
+            }
+        },
+        "decision_tree_config": {
+            "type": "object",
+            "properties": {
+            }
+        },
+        "random_forest_config": {
+            "type": "object",
+            "properties": {
+            }
+        }
+    },
+    "required": ["input_file", "predict_column", "test_size", "algorithms"]
+}
