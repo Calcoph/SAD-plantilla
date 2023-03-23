@@ -1,24 +1,49 @@
 {
     "type": "object",
     "properties": {
-        "input_file": { "type": "string" },
+        "input_file": { "type": "string", "description": "Path del fichero .csv" },
         "columns": {
+            "type": "object",
+            "properties": {
+                "list_type": { "type": "string", "enum": ["excluding", "including"] },
+                "columns": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                }
+            },
+            "description": "Todas las columnas del dataset que se tendrán en cuenta"
+        },
+        "punto_a_coma_columns": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "description": "Se cambian todos las comas de esta columna a puntos, por ejemplo: 3,57 -> 3.57"
         },
         "categorical_columns": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "description": "Se preprocesarán estas columnas como si fueran categoriales"
         },
         "text_columns": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "description": "Se preprocesarán estas columnas como si fueran texto"
         },
         "numerical_columns": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "description": "Se preprocesarán estas columnas como si fueran números"
         },
-        "predict_column": { "type": "string" },
+        "rest_columns": {
+            "type": "string",
+            "enum": ["categorical", "text", "numerical"],
+            "description": "Cómo tratar las columnas que no aparecen ni en categorical_columns, ni text_columns, ni numerical_columns."
+        },
+        "binning_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se hará binning en estas columnas"
+        },
+        "predict_column": { "type": "string", "description": "Nombre de la columna que se quiere predecir" },
         "target_map": {
             "type": "object",
             "properties": { "^": { "type": "integer" } }
@@ -32,11 +57,15 @@
             "items": {
                 "type": "object",
                 "properties": {
-                    "feature": { "type": "string" },
-                    "method": { "type": "string", "enum": ["MEAN", "MEDIAN", "CREATE_CATEGORY", "MODE"] },
-                    "constant": { }
+                    "feature": { "type": "string", "description": "nombre de la columna a imputar" },
+                    "method": { "type": "string", "enum": ["MEAN", "MEDIAN", "CREATE_CATEGORY", "MODE"], "description": "ignorará el valor de \"constant\"" },
+                    "constant": { "description": "no se tiene en cuenta si \"method\" existe" }
                 }
             }
+        },
+        "impute_default": {
+            "type": "string",
+            "enum": ["MEAN", "MEDIAN", "CREATE_CATEGORY", "MODE"]
         },
         "test_size": { "type": "number" },
         "rescale_features": {
@@ -50,6 +79,7 @@
             }
         },
         "undersampling_ratio": { "type": "number" },
+        "oversampling_ratio": { "type": "number" },
         "algorithms": {
             "type": "array",
             "items": {
@@ -70,17 +100,18 @@
                         "properties": {
                             "property": {
                                 "type": "string",
-                                "enum": ["precision", "recall", "f1-score"]
+                                "enum": ["precision", "recall", "f1-score", "accuracy"]
                             },
                             "average": {
                                 "type": "string",
-                                "enum": ["avg", "macro", "weighted-avg"]
+                                "enum": ["macro", "weighted"]
                             }
                         },
                         "required": ["property"]
-                    }
+                    },
+                    "name": { "type": "string" }
                 },
-                "required": ["algorithm", "maximize_output"]
+                "required": ["algorithm", "maximize_output", "name"]
             }
         },
         "knn_config": {
@@ -91,12 +122,38 @@
                 "stepK": { "type": "integer" },
                 "minP": { "type": "integer" },
                 "maxP": { "type": "integer" },
-                "weights": { "type": "string", "enum": ["uniform", "distance"] }
+                "weights": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["uniform", "distance"]
+                    }
+                }
             }
         },
         "decision_tree_config": {
             "type": "object",
             "properties": {
+                "criterios": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["entropy", "gini"]
+                    }
+                },
+                "splitter": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["best", "random"]
+                    }
+                },
+                "min_maxDepth": { "type": "integer" },
+                "max_maxDepth": { "type": "integer" },
+                "min_minSamplesLeaf": { "type": "integer" },
+                "max_minSamplesLeaf": { "type": "integer" },
+                "binning": { "type": "string", "enum": ["true", "false"] },
+                "numbins": { "type": "number" }
             }
         },
         "random_forest_config": {
