@@ -217,6 +217,7 @@ def preprocess(
         binning_features,
         binning_arg
 ):
+    """preprocesa los datos, tanto como para entrenar el modelo como para usarlo"""
     ml_dataset = ml_dataset[columns]
 
     for feature in categorical_features:
@@ -312,6 +313,7 @@ def run(
         binning_columns,
         binning_arg
     ) -> str:
+    """dada una configuración, entrena el mejor modelo de un algoritmo"""
 
     if isinstance(algorithm, DecisionTreeConfig):
         binning = algorithm.binning
@@ -402,8 +404,8 @@ def run(
     testY = np.array(test[TARGET]) # type: ignore
 
     # Explica lo que se hace en este paso
-    # TODO: Solo undersamplear/oversamplear si están desbalanceados
     if undersampling_ratio is not None:
+        # Hace un undersample (elimina instancias de las clases más representadas)
         undersample = RandomUnderSampler(sampling_strategy=undersampling_ratio)#la mayoria va a estar representada el doble de veces
 
         trainXUnder,trainYUnder = undersample.fit_resample(trainX,trainY) # type: ignore
@@ -413,6 +415,7 @@ def run(
         testX,testY = testXUnder, testYUnder
     
     if oversampling_ratio is not None:
+        # Hace un undersample (crea instancias de las clases menos representadas)
         oversample = RandomOverSampler(sampling_strategy=oversampling_ratio)
         trainXUnder,trainYUnder = oversample.fit_resample(trainX,trainY) # type: ignore
         testXUnder,testYUnder = oversample.fit_resample(testX, testY) # type: ignore
@@ -420,7 +423,8 @@ def run(
         trainX,trainY = trainXUnder, trainYUnder
         testX,testY = testXUnder, testYUnder
 
-    # Explica lo que se hace en este paso
+    # Según el algoritmo, ejecuta su función para entrenar el modelo
+    # Con barrido de hiperparámetros
     print(len(target_map))
     if isinstance(algorithm, KnnConfig):
         algorithm = cast(KnnConfig, algorithm)
