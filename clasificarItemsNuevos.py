@@ -99,6 +99,8 @@ if __name__ == '__main__':
 
     if algorithm["algorithm"] == Algorithm.DecisionTree:
         binning = plantilla_SAD.json_bool(get_att_default(config["decision_tree_config"], "binning", "true"))
+    elif algorithm["algorithm"] == Algorithm.RandomForest:
+        binning = plantilla_SAD.json_bool(get_att_default(config["decision_tree_config"], "binning", "true"))
     else:
         binning = False
 

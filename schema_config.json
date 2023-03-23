@@ -159,6 +159,7 @@
         "random_forest_config": {
             "type": "object",
             "properties": {
+                "n_estimators": { "type": "number" }
             }
         }
     },

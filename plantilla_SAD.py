@@ -163,8 +163,24 @@ class RandomForestConfig(AlgorithmConfig):
                 rescale: bool,
                 maximize_value: str,
                 maximize_average: str,
-                name: str
+                criterios: list[str],
+                splitters: list[str],
+                min_maxDepth: int,
+                max_maxDepth: int,
+                min_minSamplesLeaf: int,
+                max_minSamplesLeaf: int,
+                name: str,
+                binning: bool,
+                n_estimators: int
             ):
+        self.criterios = criterios
+        self.splitters = splitters
+        self.min_maxDepth = min_maxDepth
+        self.max_maxDepth = max_maxDepth
+        self.min_minSamplesLeaf = min_minSamplesLeaf
+        self.max_minSamplesLeaf = max_minSamplesLeaf
+        self.binning = binning
+        self.n_estimators = n_estimators
         super().__init__(impute,
                 drop,
                 preprocess_categorical,
@@ -299,6 +315,8 @@ def run(
 
     if isinstance(algorithm, DecisionTreeConfig):
         binning = algorithm.binning
+    elif isinstance(algorithm, RandomForestConfig):
+        binning = algorithm.binning
     else:
         binning = False
 
@@ -409,7 +427,7 @@ def run(
         return run_knn(algorithm, trainX, trainY, testX, testY, target_map, test)
     elif isinstance(algorithm, RandomForestConfig):
         algorithm = cast(RandomForestConfig, algorithm)
-        return run_random_forest(algorithm)
+        return run_random_forest(algorithm, trainX, trainY, testX, testY, target_map, test)
     elif isinstance(algorithm, DecisionTreeConfig):
         algorithm = cast(DecisionTreeConfig, algorithm)
         return run_decision_tree(algorithm, trainX, trainY, testX, testY, target_map, test)
@@ -476,9 +494,60 @@ def run_knn(
     return info
 
 def run_random_forest(
-    algorithm: RandomForestConfig
+    algorithm: RandomForestConfig,
+    trainX,
+    trainY,
+    testX,
+    testY,
+    target_map,
+    test
 ):
-    pass
+    best_alg = None
+    best_alg_params = (None, None)
+    best_score = 0.0
+    scores = []
+    for max_depth in range(algorithm.min_maxDepth, algorithm.max_maxDepth+1):
+        for min_samples_leaf in range(algorithm.min_minSamplesLeaf, algorithm.max_minSamplesLeaf+1):
+            clf = RandomForestClassifier(n_estimators=algorithm.n_estimators,
+                random_state=1337,
+                max_depth=max_depth,
+                min_samples_leaf=min_samples_leaf,
+                verbose=2)
+
+            clf.class_weight = "balanced" # type: ignore
+
+            # Explica lo que se hace en este paso
+
+            clf.fit(trainX, trainY)
+
+
+            # Build up our result dataset
+
+            # The model is now trained, we can apply it to our test set:
+
+            predictions = clf.predict(testX)
+            probas = clf.predict_proba(testX)
+            score = evaluate(predictions, probas, testX, testY, target_map, test, algorithm.maximize_value, algorithm.maximize_average)
+            if score > best_score:
+                best_score = score
+                best_alg = clf
+                best_alg_params = (max_depth, min_samples_leaf)
+            scores.append((f"{max_depth}, {min_samples_leaf}", score))
+    pickle.dump(best_alg, open(algorithm.name,"wb"))
+    (max_depth, min_samples_leaf) = best_alg_params
+    print(f"Mejor random forest: max_depth={max_depth}, min_samples_leaf={min_samples_leaf}")
+    print(f"Puntuación: {best_score}")
+    print(f"Guardando random forest {algorithm.name}")
+
+    def extract_key(x):
+        (_, score) = x
+        return score
+    scores.sort(key=extract_key, reverse=True)
+    info = "max_depth\tmin_samples_leaf\tscore\n"
+    for (stringargs, score) in scores:
+        info += stringargs + f", {score}\n"
+
+    return info
 
 def run_decision_tree(
     algorithm: DecisionTreeConfig,
@@ -861,6 +930,11 @@ if __name__ == "__main__":
             except:
                 print("Si seleccionas \"RandomForest\" tienes que poner \"random_forest_config\"")
                 exit(1)
+            try:
+                decision_tree_config = config["decision_tree_config"]
+            except:
+                print("Si seleccionas \"RandomForest\" tienes que poner \"decision_tree_config\"")
+                exit(1)
             impute = json_bool(get_att_default(algorithm, "impute", "true"))
             drop = json_bool(get_att_default(algorithm, "drop", "true"))
             preprocess_categorical = json_bool(get_att_default(algorithm, "preprocess_categorical", "true"))
@@ -870,6 +944,15 @@ if __name__ == "__main__":
             maximize_value = algorithm["maximize_output"]["property"]
             maximize_average = get_att_default(algorithm["maximize_output"], "average", None)
             name = algorithm["name"]
+            binning = json_bool(get_att_default(decision_tree_config, "binning", "true"))
+            BINNING_ARG = decision_tree_config["numbins"]
+            criterios = decision_tree_config["criterios"]
+            splitters = decision_tree_config["splitter"]
+            min_maxDepth = decision_tree_config["min_maxDepth"]
+            max_maxDepth = decision_tree_config["max_maxDepth"]
+            min_minSamplesLeaf = decision_tree_config["min_minSamplesLeaf"]
+            max_minSamplesLeaf = decision_tree_config["max_minSamplesLeaf"]
+            n_estimators = decision_tree_config["n_estimators"]
             ALGORITHMS.append(RandomForestConfig(impute,
                 drop,
                 preprocess_categorical,
@@ -878,7 +961,15 @@ if __name__ == "__main__":
                 rescale,
                 maximize_value,
                 maximize_average,
-                name))
+                criterios,
+                splitters,
+                min_maxDepth,
+                max_maxDepth,
+                min_minSamplesLeaf,
+                max_minSamplesLeaf,
+                name,
+                binning,
+                n_estimators))
         else:
             print(algorithm["algorithm"] == Algorithm.DecisionTree)
             print(algorithm["algorithm"])
