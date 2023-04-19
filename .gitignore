@@ -5,3 +5,7 @@
 !README.md
 !.gitignore
 !clasificarItemsNuevos.py
+!proyecto
+!proyecto/modelo_proyecto.py
+!proyecto/schema_config.json
+!proyecto/config_proyecto.json

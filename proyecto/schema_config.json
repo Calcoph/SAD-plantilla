@@ -43,6 +43,11 @@
             "items": { "type": "string" },
             "description": "Se hará binning en estas columnas"
         },
+        "nlp_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se hará natural language processing en estas columnas"
+        },
         "predict_column": { "type": "string", "description": "Nombre de la columna que se quiere predecir" },
         "target_map": {
             "type": "object",
