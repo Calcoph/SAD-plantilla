@@ -14,11 +14,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import CategoricalNB
 from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import TypeVar, cast
 from sklearn.preprocessing import LabelEncoder
 import pickle
 import nltk
+from emosent import get_emoji_sentiment_rank, EMOJI_SENTIMENT_DICT
 # TODO: utilizar embeddings
 
 class Enum:
@@ -69,15 +71,24 @@ class DropInstance:
     MORE = ">"
     LESS_EQ = "<="
     MORE_EQ = ">="
+    UNEQUAL = "!="
     def __init__(self, column, comparison, value):
         self.column = column
         self.comparison = comparison
         self.value = value
 
 class NlpEmoji:
-    def __init__(self, column: str, delete: bool) -> None:
+    def __init__(
+            self,
+            column: str,
+            delete: bool,
+            metrics: set[str],
+            bin: bool
+        ) -> None:
         self.column = column
         self.delete = delete
+        self.metrics = metrics
+        self.bin = bin
 
 # Clase básica para cualquier algoritmo
 class AlgorithmConfig:
@@ -218,6 +229,7 @@ class RandomForestConfig(AlgorithmConfig):
 class NaiveBayesConfig(AlgorithmConfig):
     GAUSSIAN = "gaussian"
     CATEGORICAL = "categorical"
+    MULTINOMIAL = "multinomial"
 
     def __init__(self,
                 impute: bool,
@@ -230,8 +242,10 @@ class NaiveBayesConfig(AlgorithmConfig):
                 maximize_average: str,
                 name: str,
                 type_: str,
+                binning: bool
             ):
         self.type_ = type_
+        self.binning = binning
         super().__init__(impute,
                 drop,
                 preprocess_categorical,
@@ -241,7 +255,6 @@ class NaiveBayesConfig(AlgorithmConfig):
                 maximize_value,
                 maximize_average,
                 name)
-
 
 def coerce_to_unicode(x):
     if sys.version_info < (3, 0):
@@ -254,6 +267,20 @@ def coerce_to_unicode(x):
 
 def punto_coma(x: str):
     return x.replace(",", ".")
+
+def get_emoji_metric(inp: str, metric: str, delete_emojis: bool):
+    value = 0
+    emojis_found = set()
+    for char in inp:
+        if char in EMOJI_SENTIMENT_DICT:
+            new_value = get_emoji_sentiment_rank(char)[metric]
+            value += new_value
+            emojis_found.add(char)
+    if delete_emojis:
+        for emoji in emojis_found:
+            inp = inp.replace(emoji, "")
+
+    return (inp, value)
 
 def preprocess(
         ml_dataset,
@@ -269,9 +296,8 @@ def preprocess(
         binning_features,
         binning_arg,
         NLP_columns,
-        drop_after_preprocess_columns,
         drop_instances: list[DropInstance],
-        nlp_emoji
+        nlp_emoji: list[NlpEmoji]
 ):
     """preprocesa los datos, tanto como para entrenar el modelo como para usarlo"""
 
@@ -300,9 +326,26 @@ def preprocess(
             ml_dataset.drop(ml_dataset[ml_dataset[drop.column] > drop.value].index, inplace = True)
         elif drop.comparison == DropInstance.MORE_EQ:
             ml_dataset.drop(ml_dataset[ml_dataset[drop.column] >= drop.value].index, inplace = True)
+        elif drop.comparison == DropInstance.UNEQUAL:
+            ml_dataset.drop(ml_dataset[ml_dataset[drop.column] != drop.value].index, inplace = True)
         else:
             print("Error inesperado")
             exit(1)
+
+    for nlp_emoji_col in nlp_emoji:
+        column = nlp_emoji_col.column
+        for metric in nlp_emoji_col.metrics:
+            new_column = f"{column}_{metric}_emojirank"
+            print(new_column)
+
+            ml_dataset[new_column] = ml_dataset[column].apply(lambda x: get_emoji_metric(x, metric, False)[1]) # Crea nueva columna
+
+            if nlp_emoji_col.bin:
+                binning_features.append(new_column)
+
+        if nlp_emoji_col.delete:
+            ml_dataset[column] = ml_dataset[column].apply(lambda x: get_emoji_metric(x, "positive", True)[0]) # Borra los emojis de la anterior
+        
 
     for (index, feature) in enumerate(NLP_columns):
         #encoder = LabelEncoder()
@@ -366,9 +409,6 @@ def preprocess(
     ml_dataset[TARGET] = ml_dataset[predict_column].map(str).map(target_map)
     del ml_dataset[predict_column]
 
-    for column in drop_after_preprocess_columns:
-        del ml_dataset[column]
-
     ml_dataset = ml_dataset[~ml_dataset[TARGET].isnull()]
     return ml_dataset
 
@@ -403,13 +443,17 @@ def run(
         NLP_columns,
         drop_after_preprocess_columns,
         drop_instances,
-        nlp_emoji
+        nlp_emoji,
+        drop_instances_train: list[DropInstance],
+        drop_instances_dev: list[DropInstance],
     ) -> str:
     """dada una configuración, entrena el mejor modelo de un algoritmo"""
 
     if isinstance(algorithm, DecisionTreeConfig):
         binning = algorithm.binning
     elif isinstance(algorithm, RandomForestConfig):
+        binning = algorithm.binning
+    elif isinstance(algorithm, NaiveBayesConfig):
         binning = algorithm.binning
     else:
         binning = False
@@ -428,7 +472,6 @@ def run(
         binning_columns,
         binning_arg,
         NLP_columns,
-        drop_after_preprocess_columns,
         drop_instances,
         nlp_emoji
     )
@@ -489,7 +532,44 @@ def run(
                 print('Rescaled %s' % feature.feature)
                 train[feature.feature] = (train[feature.feature] - shift).astype(np.float64) / scale # type: ignore
                 test[feature.feature] = (test[feature.feature] - shift).astype(np.float64) / scale # type: ignore
-    
+
+    for drop_instance in drop_instances_train:
+        if drop_instance.comparison == DropInstance.EQUAL:
+            train.drop(train[train[drop_instance.column] == drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.LESS:
+            train.drop(train[train[drop_instance.column] < drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.LESS_EQ:
+            train.drop(train[train[drop_instance.column] <= drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.MORE:
+            train.drop(train[train[drop_instance.column] > drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.MORE_EQ:
+            train.drop(train[train[drop_instance.column] >= drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.UNEQUAL:
+            train.drop(train[train[drop_instance.column] != drop_instance.value].index, inplace = True)
+        else:
+            print("Error inesperado")
+            exit(1)
+    for drop_instance in drop_instances_dev:
+        if drop_instance.comparison == DropInstance.EQUAL:
+            test.drop(test[test[drop_instance.column] == drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.LESS:
+            test.drop(test[test[drop_instance.column] < drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.LESS_EQ:
+            test.drop(test[test[drop_instance.column] <= drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.MORE:
+            test.drop(test[test[drop_instance.column] > drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.MORE_EQ:
+            test.drop(test[test[drop_instance.column] >= drop_instance.value].index, inplace = True)
+        elif drop_instance.comparison == DropInstance.UNEQUAL:
+            test.drop(test[test[drop_instance.column] != drop_instance.value].index, inplace = True)
+        else:
+            print("Error inesperado")
+            exit(1)
+
+    for column in drop_after_preprocess_columns:
+        del test[column]
+        del train[column]
+
     trainX = train.drop(TARGET, axis=1) # type: ignore
     #trainY = train[TARGET]
 
@@ -498,6 +578,7 @@ def run(
 
     trainY = np.array(train[TARGET]) # type: ignore
     testY = np.array(test[TARGET]) # type: ignore
+
 
     # Explica lo que se hace en este paso
     if undersampling_ratio is not None:
@@ -521,7 +602,6 @@ def run(
 
     # Según el algoritmo, ejecuta su función para entrenar el modelo
     # Con barrido de hiperparámetros
-    print(len(target_map))
     if isinstance(algorithm, KnnConfig):
         algorithm = cast(KnnConfig, algorithm)
         return run_knn(algorithm, trainX, trainY, testX, testY, target_map, test)
@@ -725,6 +805,8 @@ def run_naive_bayes(
         clf = GaussianNB()
     elif algorithm.type_ == NaiveBayesConfig.CATEGORICAL:
         clf = CategoricalNB()
+    elif algorithm.type_ == NaiveBayesConfig.MULTINOMIAL:
+        clf = MultinomialNB()
     else:
         print(f"Algoritmo naive bayes no reconocido {algorithm.type_}")
         exit(1)
@@ -852,8 +934,17 @@ def get_config(config):
     nlp_emoji = []
     for item in NLP_EMOJI:
         column = item["column"]
+        if column not in COLUMNS:
+            print(f"{column} de nlp_emoji no está en columns")
+            exit(1)
         delete = json_bool(item["delete_emojis"])
-        nlp_emoji.append(NlpEmoji(column, delete))
+        metrics_list = item["metrics"]
+        metrics = set() # Para asegurarse de que no hay repeticiones
+        for metric in metrics_list:
+            metrics.add(metric)
+
+        bin = json_bool(item["bin"])
+        nlp_emoji.append(NlpEmoji(column, delete, metrics, bin))
     try:
         rest_columns = config["rest_columns"]
         if rest_columns == ColumnType.CATEGORICAL:
@@ -890,7 +981,7 @@ def get_config(config):
 
     DROP_INSTANCES = get_att_default(config, "drop_instance", [])
     drop_instances = []
-    possible_comparisons = [DropInstance.EQUAL, DropInstance.LESS, DropInstance.MORE, DropInstance.LESS_EQ, DropInstance.MORE_EQ]
+    possible_comparisons = [DropInstance.EQUAL, DropInstance.LESS, DropInstance.MORE, DropInstance.LESS_EQ, DropInstance.MORE_EQ, DropInstance.UNEQUAL]
     for item in DROP_INSTANCES:
         try:
             columna = item["columna"]
@@ -904,6 +995,10 @@ def get_config(config):
         drop_instances.append(DropInstance(
             columna, item["comparison"], item["value"]
         ))
+
+        if columna not in COLUMNS:
+            print(f"{columna} de drop_instances no está en columns")
+            exit(1)
 
     TARGET_MAP = config["target_map"]
     DROP_ROWS_WHEN_MISSING = config["drop_rows_when_missing"]
@@ -933,6 +1028,7 @@ def get_config(config):
 
         if column not in COLUMNS:
             print(f"{column} de impute_when_missing no está en columns")
+            exit(1)
         IMPUTE_WHEN_MISSING.append(ImputeFeature(column, method, value))
     TEST_SIZE = config["test_size"]
     RESCALE_FEATURES = []
@@ -947,7 +1043,69 @@ def get_config(config):
         column = item["feature"]
         if column not in COLUMNS:
             print(f"{column} de drop_rows_when_missing no está en columns")
+            exit(1)
         RESCALE_FEATURES.append(RescaleFeature(column, method))
+
+    DROP_INSTANCES_TRAIN = get_att_default(config, "drop_from_train", [])
+    drop_instances_train = []
+    for item in DROP_INSTANCES_TRAIN:
+        try:
+            columna = item["column"]
+        except Exception:
+            print("No se ha especificado columna en un drop_from_train")
+            exit(1)
+        if item["comparison"] not in possible_comparisons:
+            print(f"Comparación incorrecta en la columna {columna}")
+            exit(1)
+
+        drop_instances_train.append(DropInstance(
+            columna, item["comparison"], item["value"]
+        ))
+
+        if columna not in COLUMNS:
+            print(f"{columna} de drop_from_train no está en columns")
+            exit(1)
+    
+    DROP_INSTANCES_DEV = get_att_default(config, "drop_from_dev", [])
+    drop_instances_dev = []
+    for item in DROP_INSTANCES_DEV:
+        try:
+            columna = item["column"]
+        except Exception:
+            print("No se ha especificado columna en un drop_from_dev")
+            exit(1)
+        if item["comparison"] not in possible_comparisons:
+            print(f"Comparación incorrecta en la columna {columna}")
+            exit(1)
+
+        drop_instances_dev.append(DropInstance(
+            columna, item["comparison"], item["value"]
+        ))
+
+        if columna not in COLUMNS:
+            print(f"{columna} de drop_from_dev no está en columns")
+            exit(1)
+
+    DROP_INSTANCES_TEST = get_att_default(config, "drop_from_test", [])
+    drop_instances_test = []
+    for item in DROP_INSTANCES_TEST:
+        try:
+            columna = item["column"]
+        except Exception:
+            print("No se ha especificado columna en un drop_from_test")
+            exit(1)
+        if item["comparison"] not in possible_comparisons:
+            print(f"Comparación incorrecta en la columna {columna}")
+            exit(1)
+
+        drop_instances_test.append(DropInstance(
+            columna, item["comparison"], item["value"]
+        ))
+
+        if columna not in COLUMNS:
+            print(f"{columna} de drop_from_test no está en columns")
+            exit(1)
+
     try:
         UNDERSAMPLING_RATIO = config["undersampling_ratio"]
     except KeyError:
@@ -980,7 +1138,10 @@ def get_config(config):
         NLP_COLUMNS,
         DROP_AFTER_PREPROCESS_COLUMNS,
         drop_instances,
-        nlp_emoji
+        nlp_emoji,
+        drop_instances_dev,
+        drop_instances_train,
+        drop_instances_test,
     )
 
 if __name__ == "__main__":
@@ -1020,7 +1181,10 @@ if __name__ == "__main__":
         NLP_COLUMNS,
         DROP_AFTER_PREPROCESS_COLUMNS,
         DROP_INSTANCES,
-        NLP_EMOJI
+        NLP_EMOJI,
+        DROP_INSTANCES_TRAIN,
+        DROP_INSTANCES_DEV,
+        _, # DROP_INSTANCES_TEST no hace falta porque aqui no hay test
     ) = get_config(config)
 
     BINNING_ARG = None
@@ -1166,6 +1330,9 @@ if __name__ == "__main__":
             maximize_average = get_att_default(algorithm["maximize_output"], "average", None)
             name = algorithm["name"]
             type_ = naive_bayes_config["type"]
+            binning = json_bool(get_att_default(naive_bayes_config, "binning", "false"))
+            if binning:
+                BINNING_ARG = naive_bayes_config["numbins"]
             ALGORITHMS.append(NaiveBayesConfig(impute,
                 drop,
                 preprocess_categorical,
@@ -1175,7 +1342,8 @@ if __name__ == "__main__":
                 maximize_value,
                 maximize_average, # type: ignore
                 name,
-                type_))
+                type_,
+                binning))
         else:
             print(algorithm["algorithm"] == Algorithm.DecisionTree)
             print(algorithm["algorithm"])
@@ -1209,7 +1377,9 @@ if __name__ == "__main__":
             NLP_COLUMNS,
             DROP_AFTER_PREPROCESS_COLUMNS,
             DROP_INSTANCES,
-            NLP_EMOJI
+            NLP_EMOJI,
+            DROP_INSTANCES_TRAIN,
+            DROP_INSTANCES_DEV,
         ))
     with open("datos_ultima_ejecucion.txt", "w") as f:
         for info in infos:
