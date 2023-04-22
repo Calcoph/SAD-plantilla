@@ -48,6 +48,24 @@
             "items": { "type": "string" },
             "description": "Se hará natural language processing en estas columnas"
         },
+        "drop_after_preprocess_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Estas columnas no se tendrán cuenta para el modelo, pero sí para el preproceso"
+        },
+        "drop_instance": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "columna": { "type": "string" },
+                    "comparison": { "type": "string", "enum": ["==", "<", ">", "<=", ">="], "description": "Ejemplo: si >= 8, todos los que sean >= 8 se van a droppear" },
+                    "value": { "type": "number" }
+                },
+                "required": ["columna", "comparison", "value"]
+            },
+            "description": "Se eliminarán instancias condicionalmente respecto a los valores de una columna"
+        },
         "predict_column": { "type": "string", "description": "Nombre de la columna que se quiere predecir" },
         "target_map": {
             "type": "object",

@@ -63,6 +63,17 @@ class RescaleFeature:
         self.feature = feature
         self.method = method
 
+class DropInstance:
+    EQUAL = "=="
+    LESS = "<"
+    MORE = ">"
+    LESS_EQ = "<="
+    MORE_EQ = ">="
+    def __init__(self, column, comparison, value):
+        self.column = column
+        self.comparison = comparison
+        self.value = value
+
 # Clase básica para cualquier algoritmo
 class AlgorithmConfig:
     def __init__(self,
@@ -252,13 +263,13 @@ def preprocess(
         binning,
         binning_features,
         binning_arg,
-        NLP_columns
+        NLP_columns,
+        drop_after_preprocess_columns,
+        drop_instances: list[DropInstance]
 ):
     """preprocesa los datos, tanto como para entrenar el modelo como para usarlo"""
 
     ml_dataset = ml_dataset[columns]
-    ml_dataset["text"].to_numpy().transpose()
-    print(ml_dataset["text"].to_numpy().get_shape())
 
     for feature in categorical_features:
         # transforma las categóricas a unicode
@@ -272,6 +283,21 @@ def preprocess(
         # Cambia las , en esta columna a .
         ml_dataset[feature] = ml_dataset[feature].apply(punto_coma)
 
+    for drop in drop_instances:
+        if drop.comparison == DropInstance.EQUAL:
+            ml_dataset.drop(ml_dataset[ml_dataset[drop.column] == drop.value].index, inplace = True)
+        elif drop.comparison == DropInstance.LESS:
+            ml_dataset.drop(ml_dataset[ml_dataset[drop.column] < drop.value].index, inplace = True)
+        elif drop.comparison == DropInstance.LESS_EQ:
+            ml_dataset.drop(ml_dataset[ml_dataset[drop.column] <= drop.value].index, inplace = True)
+        elif drop.comparison == DropInstance.MORE:
+            ml_dataset.drop(ml_dataset[ml_dataset[drop.column] > drop.value].index, inplace = True)
+        elif drop.comparison == DropInstance.MORE_EQ:
+            ml_dataset.drop(ml_dataset[ml_dataset[drop.column] >= drop.value].index, inplace = True)
+        else:
+            print("Error inesperado")
+            exit(1)
+
     for (index, feature) in enumerate(NLP_columns):
         #encoder = LabelEncoder()
         #encoded_feature = encoder.fit_transform(ml_dataset[feature])
@@ -279,14 +305,10 @@ def preprocess(
         text_tf = tf.fit_transform(ml_dataset[feature])
         #text_tf = pd.DataFrame(text_tf.toarray().transpose(),
         #           index=tf.get_feature_names_out())
-        print(text_tf.transpose().shape[1])
-        print(text_tf.get_shape())
-        exit(1)
         for (index2, column) in enumerate(text_tf.transpose()):
             ml_dataset[f"tf_idf_{index}_{index2}"] = column.toarray()[0]
         #text_tf.append(ml_dataset[TARGET])
         #feature_sets.append(text_tf)
-        print(ml_dataset)
         del ml_dataset[feature]
 
     if preprocess_numerical:
@@ -338,6 +360,9 @@ def preprocess(
     ml_dataset[TARGET] = ml_dataset[predict_column].map(str).map(target_map)
     del ml_dataset[predict_column]
 
+    for column in drop_after_preprocess_columns:
+        del ml_dataset[column]
+
     ml_dataset = ml_dataset[~ml_dataset[TARGET].isnull()]
     return ml_dataset
 
@@ -369,7 +394,9 @@ def run(
         algorithm: AlgorithmConfig,
         binning_columns,
         binning_arg,
-        NLP_columns
+        NLP_columns,
+        drop_after_preprocess_columns,
+        drop_instances
     ) -> str:
     """dada una configuración, entrena el mejor modelo de un algoritmo"""
 
@@ -393,7 +420,9 @@ def run(
         binning,
         binning_columns,
         binning_arg,
-        NLP_columns
+        NLP_columns,
+        drop_after_preprocess_columns,
+        drop_instances
     )
     strat = ml_dataset[[TARGET]]
     (train, test) = train_test_split(ml_dataset,test_size=test_size,random_state=42,stratify=strat)
@@ -709,7 +738,6 @@ def run_naive_bayes(
     print(f"Guardando naive bayes {algorithm.name}")
 
     return ""
-    
 
 def evaluate(predictions, probas, testX, testY, target_map, test, maximize_value, maximize_average) -> float:
     predictions = pd.Series(data=predictions, index=testX.index, name='predicted_value')
@@ -807,6 +835,11 @@ def get_config(config):
         if column not in COLUMNS:
             print(f"{column} de nlp_columns no está en columns")
             exit(1)
+    DROP_AFTER_PREPROCESS_COLUMNS = get_att_default(config, "drop_after_preprocess_columns", [])
+    for column in DROP_AFTER_PREPROCESS_COLUMNS:
+        if column not in COLUMNS:
+            print(f"{column} de nlp_columns no está en columns")
+            exit(1)
     try:
         rest_columns = config["rest_columns"]
         if rest_columns == ColumnType.CATEGORICAL:
@@ -840,6 +873,24 @@ def get_config(config):
     except:
         pass # rest_columns no está definido
     PREDICT_COLUMN = config["predict_column"]
+
+    DROP_INSTANCES = get_att_default(config, "drop_instance", [])
+    drop_instances = []
+    possible_comparisons = [DropInstance.EQUAL, DropInstance.LESS, DropInstance.MORE, DropInstance.LESS_EQ, DropInstance.MORE_EQ]
+    for item in DROP_INSTANCES:
+        try:
+            columna = item["columna"]
+        except Exception:
+            print("No se ha especificado columna en un drop_instance")
+            exit(1)
+        if item["comparison"] not in possible_comparisons:
+            print(f"Comparación incorrecta en la columna {columna}")
+            exit(1)
+
+        drop_instances.append(DropInstance(
+            columna, item["comparison"], item["value"]
+        ))
+
     TARGET_MAP = config["target_map"]
     DROP_ROWS_WHEN_MISSING = config["drop_rows_when_missing"]
     for column in DROP_ROWS_WHEN_MISSING:
@@ -912,7 +963,9 @@ def get_config(config):
         UNDERSAMPLING_RATIO,
         OVERSAMPLING_RATIO,
         BINNING_COLUMNS,
-        NLP_COLUMNS
+        NLP_COLUMNS,
+        DROP_AFTER_PREPROCESS_COLUMNS,
+        drop_instances
     )
 
 if __name__ == "__main__":
@@ -949,7 +1002,9 @@ if __name__ == "__main__":
         UNDERSAMPLING_RATIO,
         OVERSAMPLING_RATIO,
         BINNING_COLUMNS,
-        NLP_COLUMNS
+        NLP_COLUMNS,
+        DROP_AFTER_PREPROCESS_COLUMNS,
+        DROP_INSTANCES
     ) = get_config(config)
 
     BINNING_ARG = None
@@ -1135,7 +1190,9 @@ if __name__ == "__main__":
             algorithm,
             BINNING_COLUMNS,
             BINNING_ARG,
-            NLP_COLUMNS
+            NLP_COLUMNS,
+            DROP_AFTER_PREPROCESS_COLUMNS,
+            DROP_INSTANCES
         ))
     with open("datos_ultima_ejecucion.txt", "w") as f:
         for info in infos:
