@@ -53,6 +53,16 @@
             "items": { "type": "string" },
             "description": "Estas columnas no se tendrán cuenta para el modelo, pero sí para el preproceso"
         },
+        "nlp_emoji": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "column": { "type": "string" },
+                    "delete_emojis": { "type": "string", "enum": ["true", "false"] }
+                }
+            }
+        },
         "drop_instance": {
             "type": "array",
             "items": {

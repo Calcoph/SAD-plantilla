@@ -74,6 +74,11 @@ class DropInstance:
         self.comparison = comparison
         self.value = value
 
+class NlpEmoji:
+    def __init__(self, column: str, delete: bool) -> None:
+        self.column = column
+        self.delete = delete
+
 # Clase básica para cualquier algoritmo
 class AlgorithmConfig:
     def __init__(self,
@@ -265,7 +270,8 @@ def preprocess(
         binning_arg,
         NLP_columns,
         drop_after_preprocess_columns,
-        drop_instances: list[DropInstance]
+        drop_instances: list[DropInstance],
+        nlp_emoji
 ):
     """preprocesa los datos, tanto como para entrenar el modelo como para usarlo"""
 
@@ -396,7 +402,8 @@ def run(
         binning_arg,
         NLP_columns,
         drop_after_preprocess_columns,
-        drop_instances
+        drop_instances,
+        nlp_emoji
     ) -> str:
     """dada una configuración, entrena el mejor modelo de un algoritmo"""
 
@@ -422,7 +429,8 @@ def run(
         binning_arg,
         NLP_columns,
         drop_after_preprocess_columns,
-        drop_instances
+        drop_instances,
+        nlp_emoji
     )
     strat = ml_dataset[[TARGET]]
     (train, test) = train_test_split(ml_dataset,test_size=test_size,random_state=42,stratify=strat)
@@ -840,6 +848,12 @@ def get_config(config):
         if column not in COLUMNS:
             print(f"{column} de nlp_columns no está en columns")
             exit(1)
+    NLP_EMOJI = get_att_default(config, "nlp_emoji", [])
+    nlp_emoji = []
+    for item in NLP_EMOJI:
+        column = item["column"]
+        delete = json_bool(item["delete_emojis"])
+        nlp_emoji.append(NlpEmoji(column, delete))
     try:
         rest_columns = config["rest_columns"]
         if rest_columns == ColumnType.CATEGORICAL:
@@ -965,7 +979,8 @@ def get_config(config):
         BINNING_COLUMNS,
         NLP_COLUMNS,
         DROP_AFTER_PREPROCESS_COLUMNS,
-        drop_instances
+        drop_instances,
+        nlp_emoji
     )
 
 if __name__ == "__main__":
@@ -1004,7 +1019,8 @@ if __name__ == "__main__":
         BINNING_COLUMNS,
         NLP_COLUMNS,
         DROP_AFTER_PREPROCESS_COLUMNS,
-        DROP_INSTANCES
+        DROP_INSTANCES,
+        NLP_EMOJI
     ) = get_config(config)
 
     BINNING_ARG = None
@@ -1192,7 +1208,8 @@ if __name__ == "__main__":
             BINNING_ARG,
             NLP_COLUMNS,
             DROP_AFTER_PREPROCESS_COLUMNS,
-            DROP_INSTANCES
+            DROP_INSTANCES,
+            NLP_EMOJI
         ))
     with open("datos_ultima_ejecucion.txt", "w") as f:
         for info in infos:

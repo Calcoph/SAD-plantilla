@@ -9,3 +9,5 @@
 !proyecto/modelo_proyecto.py
 !proyecto/schema_config.json
 !proyecto/config_proyecto.json
+!proyecto/snippets
+!proyecto/snippets/*
