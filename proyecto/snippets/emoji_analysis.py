@@ -7,8 +7,6 @@ def get_emoji_metric(inp: str, metric: str, delete_emojis: bool):
         if char in EMOJI_SENTIMENT_DICT:
             new_value = get_emoji_sentiment_rank(char)[metric]
             value += new_value
-            print(char)
-            print(new_value)
             emojis_found.add(char)
     if delete_emojis:
         for emoji in emojis_found:
