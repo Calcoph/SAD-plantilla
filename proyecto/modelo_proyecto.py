@@ -295,7 +295,7 @@ def preprocess(
         binning,
         binning_features,
         binning_arg,
-        NLP_columns,
+        tf_idf_columns,
         drop_instances: list[DropInstance],
         nlp_emoji: list[NlpEmoji]
 ):
@@ -347,7 +347,7 @@ def preprocess(
             ml_dataset[column] = ml_dataset[column].apply(lambda x: get_emoji_metric(x, "positive", True)[0]) # Borra los emojis de la anterior
         
 
-    for (index, feature) in enumerate(NLP_columns):
+    for (index, feature) in enumerate(tf_idf_columns):
         #encoder = LabelEncoder()
         #encoded_feature = encoder.fit_transform(ml_dataset[feature])
         tf = TfidfVectorizer()
@@ -440,7 +440,7 @@ def run(
         algorithm: AlgorithmConfig,
         binning_columns,
         binning_arg,
-        NLP_columns,
+        tf_idf_columns,
         drop_after_preprocess_columns,
         drop_instances,
         nlp_emoji,
@@ -471,7 +471,7 @@ def run(
         binning,
         binning_columns,
         binning_arg,
-        NLP_columns,
+        tf_idf_columns,
         drop_instances,
         nlp_emoji
     )
@@ -920,15 +920,15 @@ def get_config(config):
         if column not in COLUMNS:
             print(f"{column} de binning_columns no está en columns")
             exit(1)
-    NLP_COLUMNS = get_att_default(config, "nlp_columns", [])
-    for column in NLP_COLUMNS:
+    TF_IDF_COLUMNS = get_att_default(config, "tf_idf_columns", [])
+    for column in TF_IDF_COLUMNS:
         if column not in COLUMNS:
-            print(f"{column} de nlp_columns no está en columns")
+            print(f"{column} de tf_idf_columns no está en columns")
             exit(1)
     DROP_AFTER_PREPROCESS_COLUMNS = get_att_default(config, "drop_after_preprocess_columns", [])
     for column in DROP_AFTER_PREPROCESS_COLUMNS:
         if column not in COLUMNS:
-            print(f"{column} de nlp_columns no está en columns")
+            print(f"{column} de drop_after_preprocess_columns no está en columns")
             exit(1)
     NLP_EMOJI = get_att_default(config, "nlp_emoji", [])
     nlp_emoji = []
@@ -1135,7 +1135,7 @@ def get_config(config):
         UNDERSAMPLING_RATIO,
         OVERSAMPLING_RATIO,
         BINNING_COLUMNS,
-        NLP_COLUMNS,
+        TF_IDF_COLUMNS,
         DROP_AFTER_PREPROCESS_COLUMNS,
         drop_instances,
         nlp_emoji,
@@ -1178,7 +1178,7 @@ if __name__ == "__main__":
         UNDERSAMPLING_RATIO,
         OVERSAMPLING_RATIO,
         BINNING_COLUMNS,
-        NLP_COLUMNS,
+        TF_IDF_COLUMNS,
         DROP_AFTER_PREPROCESS_COLUMNS,
         DROP_INSTANCES,
         NLP_EMOJI,
@@ -1374,7 +1374,7 @@ if __name__ == "__main__":
             algorithm,
             BINNING_COLUMNS,
             BINNING_ARG,
-            NLP_COLUMNS,
+            TF_IDF_COLUMNS,
             DROP_AFTER_PREPROCESS_COLUMNS,
             DROP_INSTANCES,
             NLP_EMOJI,

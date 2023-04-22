@@ -43,10 +43,10 @@
             "items": { "type": "string" },
             "description": "Se hará binning en estas columnas"
         },
-        "nlp_columns": {
+        "tf_idf_columns": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Se hará natural language processing en estas columnas"
+            "description": "Se aplicará tf_idf en estas columnas"
         },
         "drop_after_preprocess_columns": {
             "type": "array",
