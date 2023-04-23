@@ -1,0 +1,27 @@
+Get-Job # (Powershell) lista los procesos en background
+
+python ./modelo_proyecto.py ./config_proyecto1.json > out/1_.txt&
+python ./modelo_proyecto.py ./config_proyecto2.json > out/2.txt&
+python ./modelo_proyecto.py ./config_proyecto3.json > out/3.txt&
+python ./modelo_proyecto.py ./config_proyecto4.json > out/4.txt&
+python ./modelo_proyecto.py ./config_proyecto5.json > out/5.txt&
+python ./modelo_proyecto.py ./config_proyecto6.json > out/6.txt&
+python ./modelo_proyecto.py ./config_proyecto7.json > out/7.txt&
+python ./modelo_proyecto.py ./config_proyecto8.json > out/8.txt&
+python ./modelo_proyecto.py ./config_proyecto9.json > out/9.txt&
+python ./modelo_proyecto.py ./config_proyecto10.json > out/10.txt&
+python ./modelo_proyecto.py ./config_proyecto11.json > out/11.txt&
+python ./modelo_proyecto.py ./config_proyecto12.json > out/12.txt&
+python ./modelo_proyecto.py ./config_proyecto13.json > out/13.txt&
+python ./modelo_proyecto.py ./config_proyecto14.json > out/14.txt&
+python ./modelo_proyecto.py ./config_proyecto15.json > out/15.txt&
+python ./modelo_proyecto.py ./config_proyecto16.json > out/16.txt&
+python ./modelo_proyecto.py ./config_proyecto17.json > out/17.txt&
+python ./modelo_proyecto.py ./config_proyecto18.json > out/18.txt&
+python ./modelo_proyecto.py ./config_proyecto19.json > out/19.txt&
+python ./modelo_proyecto.py ./config_proyecto20.json > out/20.txt&
+python ./modelo_proyecto.py ./config_proyecto21.json > out/21.txt&
+python ./modelo_proyecto.py ./config_proyecto22.json > out/22.txt&
+python ./modelo_proyecto.py ./config_proyecto23.json > out/23.txt&
+python ./modelo_proyecto.py ./config_proyecto24.json > out/24.txt&
+python ./modelo_proyecto.py ./config_proyecto25.json > out/25.txt&

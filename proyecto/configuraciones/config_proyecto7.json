@@ -1,0 +1,58 @@
+{
+    "$schema": "schema_config.json",
+    "input_file": "TweetsTrainDev.csv",
+    "columns": {
+        "list_type": "including",
+        "columns": ["airline_sentiment", "text", "airline_sentiment_confidence", "airline"]
+    },
+    "categorical_columns": [],
+    "text_columns": [],
+    "numerical_columns": [],
+    "predict_column": "airline_sentiment",
+    "tf_idf_columns": ["text"],
+    "target_map": {
+        "neutral": 0,
+        "positive": 1,
+        "negative": 2
+    },
+    "drop_rows_when_missing": [],
+    "impute_when_missing": [
+    ],
+    "test_size": 0.2,
+    "rescale_features": [
+    ],
+    "nlp_emoji": [
+        {
+            "column": "text",
+            "delete_emojis": "true",
+            "metrics": ["positive", "negative", "neutral", "sentiment_score"],
+            "bin": "true"
+        }
+    ],
+    "algorithms": [
+        {
+            "algorithm": "NaiveBayes",
+            "maximize_output": {
+                "property": "f1-score",
+                "average": "macro"
+            },
+            "name": "NB_gaussian_model.sav"
+        }
+    ],
+    "naive_bayes_config": {
+        "type": "gaussian",
+        "binning": "true",
+        "numbins": 10
+    },
+    "drop_after_preprocess_columns": ["airline_sentiment_confidence", "airline"],
+    "drop_instance": [{
+        "columna": "airline_sentiment_confidence",
+        "comparison": "<",
+        "value": 0.6
+    }],
+    "drop_from_dev": [{
+        "column": "airline",
+        "comparison": "!=",
+        "value": "United"
+    }]
+}

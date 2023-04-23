@@ -3,13 +3,13 @@
     "input_file": "TweetsTrainDev.csv",
     "columns": {
         "list_type": "including",
-        "columns": ["airline_sentiment", "text"]
+        "columns": ["airline_sentiment", "text", "airline_sentiment_confidence", "airline"]
     },
     "categorical_columns": [],
     "text_columns": [],
     "numerical_columns": [],
     "predict_column": "airline_sentiment",
-    "nlp_columns": ["text"],
+    "tf_idf_columns": ["text"],
     "target_map": {
         "neutral": 0,
         "positive": 1,
@@ -33,5 +33,16 @@
     ],
     "naive_bayes_config": {
         "type": "gaussian"
-    }
+    },
+    "drop_after_preprocess_columns": ["airline_sentiment_confidence", "airline"],
+    "drop_instance": [{
+        "columna": "airline_sentiment_confidence",
+        "comparison": "<",
+        "value": 0.4
+    }],
+    "drop_from_dev": [{
+        "column": "airline",
+        "comparison": "!=",
+        "value": "United"
+    }]
 }

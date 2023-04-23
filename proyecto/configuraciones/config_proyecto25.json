@@ -1,0 +1,52 @@
+{
+    "$schema": "schema_config.json",
+    "input_file": "TweetsTrainDev.csv",
+    "columns": {
+        "list_type": "including",
+        "columns": ["airline_sentiment", "text", "airline"]
+    },
+    "categorical_columns": [],
+    "text_columns": [],
+    "numerical_columns": [],
+    "predict_column": "airline_sentiment",
+    "tf_idf_columns": ["text"],
+    "target_map": {
+        "neutral": 0,
+        "positive": 1,
+        "negative": 2
+    },
+    "drop_rows_when_missing": [],
+    "impute_when_missing": [
+    ],
+    "test_size": 0.2,
+    "rescale_features": [
+    ],
+    "algorithms": [
+        {
+            "algorithm": "RandomForest",
+            "maximize_output": {
+                "property": "f1-score",
+                "average": "macro"
+            },
+            "name": "Random_forest_model_smol.sav"
+        }
+    ],
+    "random_forest_config": {
+        "n_estimators": 100
+    },
+    "decision_tree_config": {
+        "numbins": 10,
+        "criterios": ["entropy"],
+        "splitter": ["best"],
+        "min_maxDepth": 10,
+        "max_maxDepth": 30,
+        "min_minSamplesLeaf": 1,
+        "max_minSamplesLeaf": 10
+    },
+    "drop_from_dev": [{
+        "column": "airline",
+        "comparison": "!=",
+        "value": "United"
+    }],
+    "drop_after_preprocess_columns": ["airline"]
+}

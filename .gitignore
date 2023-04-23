@@ -11,3 +11,7 @@
 !proyecto/config_proyecto.json
 !proyecto/snippets
 !proyecto/snippets/*
+!proyecto/configuraciones
+!proyecto/configuraciones/*
+!proyecto/out
+!proyecto/out/out.md
