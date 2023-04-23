@@ -26,3 +26,8 @@ python ./modelo_proyecto.py configuraciones/config_proyecto23.json > out/23.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto24.json > out/24.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto25.json > out/25.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto26.json > out/26.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto27.json > out/27.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto28.json > out/28.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto29.json > out/29.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto30.json > out/30.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto31.json > out/31.txt&
