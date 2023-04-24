@@ -32,7 +32,10 @@
         }
     ],
     "naive_bayes_config": {
-        "type": "gaussian"
+        "type": "gaussian",
+        "max_alpha": 0.0000000002,
+        "min_alpha": 0.0000000001,
+        "step_alpha": 1.0
     },
     "drop_after_preprocess_columns": ["airline_sentiment_confidence", "airline"],
     "drop_instance": [{

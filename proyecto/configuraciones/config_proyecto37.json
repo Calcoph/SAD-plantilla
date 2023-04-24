@@ -3,7 +3,7 @@
     "input_file": "TweetsTrainDev.csv",
     "columns": {
         "list_type": "including",
-        "columns": ["airline_sentiment", "text", "airline_sentiment_confidence", "airline"]
+        "columns": ["airline_sentiment", "text", "airline"]
     },
     "categorical_columns": [],
     "text_columns": [],
@@ -21,14 +21,6 @@
     "test_size": 0.2,
     "rescale_features": [
     ],
-    "nlp_emoji": [
-        {
-            "column": "text",
-            "delete_emojis": "true",
-            "metrics": ["positive", "negative", "neutral"],
-            "bin": "true"
-        }
-    ],
     "algorithms": [
         {
             "algorithm": "NaiveBayes",
@@ -36,26 +28,24 @@
                 "property": "f1-score",
                 "average": "macro"
             },
-            "name": "NB_gaussian_model.sav"
+            "name": "NB_categorical_model.sav"
         }
     ],
     "naive_bayes_config": {
-        "type": "gaussian",
-        "binning": "true",
-        "numbins": 10,
-        "max_alpha": 0.0000000002,
-        "min_alpha": 0.0000000001,
-        "step_alpha": 1.0
+        "type": "categorical",
+        "min_alpha": 0.01,
+        "max_alpha": 3.0,
+        "step_alpha": 0.05
     },
-    "drop_after_preprocess_columns": ["airline_sentiment_confidence", "airline"],
-    "drop_instance": [{
-        "columna": "airline_sentiment_confidence",
-        "comparison": "<",
-        "value": 0.6
-    }],
     "drop_from_dev": [{
         "column": "airline",
         "comparison": "!=",
         "value": "United"
-    }]
+    }],
+    "drop_after_preprocess_columns": ["airline"],
+    "stop_words": {
+        "add_words": ["united", "unitedairlines"],
+        "start_from_english": "false"
+    },
+    "bin_tfidf": "true"
 }

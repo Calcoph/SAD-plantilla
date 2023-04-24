@@ -85,7 +85,8 @@ if __name__ == '__main__':
         _,# DROP_INSTANCES_DEV no hace falta porque aqui no hay test
         DROP_INSTANCES_TEST, # DROP_INSTANCES_TEST no hace falta porque aqui no hay test
         STOP_WORDS,
-        TF_IDF_PICKLE_NAME
+        TF_IDF_PICKLE_NAME,
+        BIN_TFIDF
     ) = modelo_proyecto.get_config(config)
 
     if p == './':
@@ -137,7 +138,8 @@ if __name__ == '__main__':
         NLP_EMOJI,
         STOP_WORDS,
         True,
-        TF_IDF_PICKLE_NAME
+        TF_IDF_PICKLE_NAME,
+        BIN_TFIDF
     )
 
     if algorithm["algorithm"] == Algorithm.KNN:

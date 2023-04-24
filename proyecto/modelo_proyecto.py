@@ -35,6 +35,8 @@ class LemmaTokenizer(object):
         return [self.wnl.lemmatize(t) for t in word_tokenize(articles)]
 """
 
+NEGATIVE_EVALUATION = False
+
 class Enum:
     pass
 
@@ -277,10 +279,16 @@ class NaiveBayesConfig(AlgorithmConfig):
                 maximize_average: str,
                 name: str,
                 type_: str,
-                binning: bool
+                binning: bool,
+                min_alpha,
+                max_alpha,
+                step_alpha
             ):
         self.type_ = type_
         self.binning = binning
+        self.min_alpha = min_alpha
+        self.max_alpha = max_alpha
+        self.step_alpha = step_alpha
         super().__init__(impute,
                 drop,
                 preprocess_categorical,
@@ -335,7 +343,8 @@ def preprocess(
         nlp_emoji: list[NlpEmoji],
         stop_words: StopWords,
         testing: bool,
-        tf_idf_pickle_name: str
+        tf_idf_pickle_name: str,
+        bin_tfidf: bool
 ):
     """preprocesa los datos, tanto como para entrenar el modelo como para usarlo"""
 
@@ -386,8 +395,6 @@ def preprocess(
         
 
     for (index, feature) in enumerate(tf_idf_columns):
-        #encoder = LabelEncoder()
-        #encoded_feature = encoder.fit_transform(ml_dataset[feature])
         if testing:
             tf = pickle.load(open(tf_idf_pickle_name, 'rb'))
         else:
@@ -420,7 +427,10 @@ def preprocess(
         #text_tf = pd.DataFrame(text_tf.toarray().transpose(),
         #           index=tf.get_feature_names_out())
         for (index2, column) in enumerate(text_tf.transpose()):
-            ml_dataset[f"tf_idf_{index}_{index2}"] = column.toarray()[0]
+            column_name = f"tf_idf_{index}_{index2}"
+            ml_dataset[column_name] = column.toarray()[0]
+            if bin_tfidf:
+                binning_features.append(column_name)
         #text_tf.append(ml_dataset[TARGET])
         #feature_sets.append(text_tf)
         del ml_dataset[feature]
@@ -512,7 +522,8 @@ def run(
         drop_instances_train: list[DropInstance],
         drop_instances_dev: list[DropInstance],
         stop_words: StopWords,
-        tf_idf_pickle_name: str
+        tf_idf_pickle_name: str,
+        bin_tfidf: bool
     ) -> str:
     """dada una configuración, entrena el mejor modelo de un algoritmo"""
 
@@ -543,7 +554,8 @@ def run(
         nlp_emoji,
         stop_words,
         False,
-        tf_idf_pickle_name
+        tf_idf_pickle_name,
+        bin_tfidf
     )
     strat = ml_dataset[[TARGET]]
     (train, test) = train_test_split(ml_dataset,test_size=test_size,random_state=42,stratify=strat)
@@ -650,6 +662,7 @@ def run(
     testY = np.array(test[TARGET]) # type: ignore
 
 
+    print("SAMPLING")
     # Explica lo que se hace en este paso
     if undersampling_ratio is not None:
         # Hace un undersample (elimina instancias de las clases más representadas)
@@ -677,6 +690,7 @@ def run(
         return run_knn(algorithm, trainX, trainY, testX, testY, target_map, test)
     elif isinstance(algorithm, RandomForestConfig):
         algorithm = cast(RandomForestConfig, algorithm)
+        print("RANDOM FOREST")
         return run_random_forest(algorithm, trainX, trainY, testX, testY, target_map, test)
     elif isinstance(algorithm, DecisionTreeConfig):
         algorithm = cast(DecisionTreeConfig, algorithm)
@@ -874,30 +888,41 @@ def run_naive_bayes(
     target_map,
     test
 ):
-    if algorithm.type_ == NaiveBayesConfig.GAUSSIAN:
-        clf = GaussianNB()
-    elif algorithm.type_ == NaiveBayesConfig.CATEGORICAL:
-        clf = CategoricalNB()
-    elif algorithm.type_ == NaiveBayesConfig.MULTINOMIAL:
-        clf = MultinomialNB()
-    else:
-        print(f"Algoritmo naive bayes no reconocido {algorithm.type_}")
-        exit(1)
-    
-    clf.fit(trainX, trainY)
-
-    best_score = 0.0
     best_alg = None
-    predictions = clf.predict(testX)
-    probas = clf.predict_proba(testX)
-    score = evaluate(predictions, probas, testX, testY, target_map, test, algorithm.maximize_value, algorithm.maximize_average)
-    if score > best_score:
-        best_score = score
-        best_alg = clf
-    
+    best_alg_params = 0
+    best_score = 0.0
+    scores = []
+    alpha = algorithm.min_alpha
+    while True:
+        if alpha > max_alpha:
+            break
+
+        if algorithm.type_ == NaiveBayesConfig.GAUSSIAN:
+            clf = GaussianNB(var_smoothing=alpha)
+        elif algorithm.type_ == NaiveBayesConfig.CATEGORICAL:
+            clf = CategoricalNB(alpha=alpha)
+        elif algorithm.type_ == NaiveBayesConfig.MULTINOMIAL:
+            clf = MultinomialNB(alpha=alpha)
+        else:
+            print(f"Algoritmo naive bayes no reconocido {algorithm.type_}")
+            exit(1)
+
+        clf.fit(trainX, trainY)
+
+        predictions = clf.predict(testX)
+        probas = clf.predict_proba(testX)
+        score = evaluate(predictions, probas, testX, testY, target_map, test, algorithm.maximize_value, algorithm.maximize_average)
+        scores.append(score)
+        if score > best_score:
+            best_score = score
+            best_alg = clf
+            best_alg_params = alpha
+        
+        alpha += algorithm.step_alpha
+    print(scores)
     pickle.dump(best_alg, open(algorithm.name,"wb"))
     print(f"Mejor naive bayes")
-    print(f"Puntuación: {best_score}")
+    print(f"Puntuación: {best_score}, alpha={best_alg_params}")
     print(f"Guardando naive bayes {algorithm.name}")
 
     return ""
@@ -916,17 +941,31 @@ def evaluate(predictions, probas, testX, testY, target_map, test, maximize_value
     results_test = results_test.join(test[TARGET], how='left') # type: ignore
     results_test = results_test.rename(columns= {TARGET: 'TARGET'})
 
-    if maximize_value == MaximizeValue.FSCORE:
-        return f1_score(testY, predictions, average=maximize_average) # type: ignore
-    elif maximize_value == MaximizeValue.PRECISION:
-        return precision_score(testY, predictions, average=maximize_average) # type: ignore
-    elif maximize_value == MaximizeValue.RECALL:
-        return recall_score(testY, predictions, average=maximize_average) # type: ignore
-    elif maximize_value == MaximizeValue.ACCURACY:
-        return accuracy_score(testY, predictions, average=maximize_average) # type: ignore
+    if NEGATIVE_EVALUATION:
+        if maximize_value == MaximizeValue.FSCORE:
+            print(f1_score(testY, predictions, average=None))
+            return f1_score(testY, predictions, average=None)[2] # type: ignore
+        elif maximize_value == MaximizeValue.PRECISION:
+            return precision_score(testY, predictions, average=None)[2] # type: ignore
+        elif maximize_value == MaximizeValue.RECALL:
+            return recall_score(testY, predictions, average=None)[2] # type: ignore
+        elif maximize_value == MaximizeValue.ACCURACY:
+            return accuracy_score(testY, predictions, average=None)[2] # type: ignore
+        else:
+            print("método de maximizar no disponible")
+            exit(1)
     else:
-        print("método de maximizar no disponible")
-        exit(1)
+        if maximize_value == MaximizeValue.FSCORE:
+            return f1_score(testY, predictions, average=maximize_average) # type: ignore
+        elif maximize_value == MaximizeValue.PRECISION:
+            return precision_score(testY, predictions, average=maximize_average) # type: ignore
+        elif maximize_value == MaximizeValue.RECALL:
+            return recall_score(testY, predictions, average=maximize_average) # type: ignore
+        elif maximize_value == MaximizeValue.ACCURACY:
+            return accuracy_score(testY, predictions, average=maximize_average) # type: ignore
+        else:
+            print("método de maximizar no disponible")
+            exit(1)
 
 T = TypeVar("T")
 def get_att_default(dictionary: dict[str, T], att: str, default: T) -> T :
@@ -1201,6 +1240,7 @@ def get_config(config):
     algorithms = config["algorithms"]
 
     TF_IDF_PICKLE_NAME = get_att_default(config, "tf_idf_pickle_name", "default_tf_save.tfidf")
+    BIN_TFIDF = json_bool(get_att_default(config, "bin_tfidf", "false"))
 
     return (
         algorithms,
@@ -1227,7 +1267,8 @@ def get_config(config):
         drop_instances_train,
         drop_instances_test,
         stop_words,
-        TF_IDF_PICKLE_NAME
+        TF_IDF_PICKLE_NAME,
+        BIN_TFIDF
     )
 
 if __name__ == "__main__":
@@ -1272,10 +1313,13 @@ if __name__ == "__main__":
         DROP_INSTANCES_DEV,
         _, # DROP_INSTANCES_TEST no hace falta porque aqui no hay test
         STOP_WORDS,
-        TF_IDF_PICKLE_NAME
+        TF_IDF_PICKLE_NAME,
+        BIN_TFIDF
     ) = get_config(config)
 
     BINNING_ARG = None
+    if BIN_TFIDF:
+        BINNING_ARG = 10
     CONFIG = None
     ALGORITHMS = []
     for algorithm in algorithms:
@@ -1419,6 +1463,10 @@ if __name__ == "__main__":
             name = algorithm["name"]
             type_ = naive_bayes_config["type"]
             binning = json_bool(get_att_default(naive_bayes_config, "binning", "false"))
+
+            min_alpha = get_att_default(naive_bayes_config, "min_alpha", 1.0)
+            max_alpha = get_att_default(naive_bayes_config, "max_alpha", 1.01)
+            step_alpha = get_att_default(naive_bayes_config, "step_alpha", 0.1)
             if binning:
                 BINNING_ARG = naive_bayes_config["numbins"]
             ALGORITHMS.append(NaiveBayesConfig(impute,
@@ -1431,7 +1479,10 @@ if __name__ == "__main__":
                 maximize_average, # type: ignore
                 name,
                 type_,
-                binning))
+                binning,
+                min_alpha,
+                max_alpha,
+                step_alpha))
         else:
             print(algorithm["algorithm"] == Algorithm.DecisionTree)
             print(algorithm["algorithm"])
@@ -1469,7 +1520,8 @@ if __name__ == "__main__":
             DROP_INSTANCES_TRAIN,
             DROP_INSTANCES_DEV,
             STOP_WORDS,
-            TF_IDF_PICKLE_NAME
+            TF_IDF_PICKLE_NAME,
+            BIN_TFIDF
         ))
     with open("datos_ultima_ejecucion.txt", "w") as f:
         for info in infos:

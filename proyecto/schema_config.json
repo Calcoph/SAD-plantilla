@@ -229,7 +229,10 @@
             "properties": {
                 "type": { "type": "string", "enum": ["gaussian", "categorical", "multinomial"] },
                 "binning": { "type": "string", "enum": ["true", "false"] },
-                "numbins": { "type": "number" }
+                "numbins": { "type": "number" },
+                "min_alpha": {"type": "number"},
+                "max_alpha": {"type": "number"},
+                "step_alpha": {"type": "number"}
             }
         },
         "decision_tree_config": {
@@ -264,5 +267,6 @@
             }
         }
     },
-    "required": ["input_file", "predict_column", "test_size", "algorithms"]
+    "required": ["input_file", "predict_column", "test_size", "algorithms"],
+    "bin_tfidf": { "type": "string", "enum": ["true", "false"] }
 }

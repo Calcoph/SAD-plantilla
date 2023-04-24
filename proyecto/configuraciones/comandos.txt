@@ -33,3 +33,24 @@ python ./modelo_proyecto.py configuraciones/config_proyecto30.json > out/30.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto31.json > out/31.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto32.json > out/32.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto33.json > out/33.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto34.json > out/34.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto35.json > out/35.txt&
+
+python ./modelo_proyecto.py configuraciones/config_proyecto36.json > out/36.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto37.json > out/37.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto38.json > out/38.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto39.json > out/39.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto40.json > out/40.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto41.json > out/41.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto42.json > out/42.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto43.json > out/43.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto44.json > out/44.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto45.json > out/45.txt&
+
+python ./modelo_proyecto.py configuraciones/config_proyecto46.json > out/46.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto47.json > out/47.txt&
+
+python ./modelo_proyecto.py configuraciones/config_proyecto1.json > out/1_.txt&
+
+
+python ./modelo_proyecto.py configuraciones/config_proyecto21.json > out/21.txt&
