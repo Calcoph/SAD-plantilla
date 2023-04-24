@@ -23,25 +23,16 @@
     ],
     "algorithms": [
         {
-            "algorithm": "RandomForest",
+            "algorithm": "NaiveBayes",
             "maximize_output": {
                 "property": "f1-score",
                 "average": "macro"
             },
-            "name": "model_27.sav"
+            "name": "NB_gaussian_model.sav"
         }
     ],
-    "random_forest_config": {
-        "n_estimators": 100
-    },
-    "decision_tree_config": {
-        "numbins": 10,
-        "criterios": ["entropy"],
-        "splitter": ["best"],
-        "min_maxDepth": 13,
-        "max_maxDepth": 23,
-        "min_minSamplesLeaf": 3,
-        "max_minSamplesLeaf": 7
+    "naive_bayes_config": {
+        "type": "gaussian"
     },
     "drop_from_dev": [{
         "column": "airline",
@@ -49,13 +40,8 @@
         "value": "United"
     }],
     "drop_after_preprocess_columns": ["airline"],
-    "nlp_emoji": [
-        {
-            "column": "text",
-            "delete_emojis": "true",
-            "metrics": ["sentiment_score"],
-            "bin": "true"
-        }
-    ],
-    "tf_idf_pickle_name": "tfidf_27.tfidf"
+    "stop_words": {
+        "add_words": ["united", "unitedairlines"],
+        "start_from_english": "false"
+    }
 }

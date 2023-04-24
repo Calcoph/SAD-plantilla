@@ -33,3 +33,10 @@ Si pone $ antes de un número, significa que extiende la descripción de esa pru
 29| random forest | $26 + emoji positive|0.6778098450304378|max_depth=22, min_samples_leaf=3
 30| random forest | $26 + emoji positive+neutral+negative|0.6747283092303015|max_depth=14, min_samples_leaf=3
 31| random forest | $26 + emoji positive+neutral+negative+sentiment_score|0.6794446334997019|max_depth=21, min_samples_leaf=3
+32| random forest | $28 +  borrar emojis|0.6766391654184885|max_depth=17, min_samples_leaf=4
+33| random forest | $27 + lematizar | 0.6850769714351029 | max_depth=23, min_samples_leaf=5
+34|random forest|$27-binning
+
+con y sin strip_accents -> no cambia nada
+
+con y sin stop words -> Elegidas a mano: no cambia nada. Usando inglés -> empeora

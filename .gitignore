@@ -13,5 +13,6 @@
 !proyecto/snippets/*
 !proyecto/configuraciones
 !proyecto/configuraciones/*
+proyecto/configuraciones/configuraciones.tex
 !proyecto/out
 !proyecto/out/out.md

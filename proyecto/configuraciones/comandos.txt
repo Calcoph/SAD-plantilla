@@ -1,6 +1,6 @@
 Get-Job # (Powershell) lista los procesos en background
 
-python ./modelo_proyecto.py configuraciones/config_proyecto1.json > out/1_.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto1.json > out/1.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto2.json > out/2.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto3.json > out/3.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto4.json > out/4.txt&
@@ -31,3 +31,5 @@ python ./modelo_proyecto.py configuraciones/config_proyecto28.json > out/28.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto29.json > out/29.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto30.json > out/30.txt&
 python ./modelo_proyecto.py configuraciones/config_proyecto31.json > out/31.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto32.json > out/32.txt&
+python ./modelo_proyecto.py configuraciones/config_proyecto33.json > out/33.txt&

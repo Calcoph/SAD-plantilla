@@ -1,6 +1,6 @@
 {
     "$schema": "schema_config.json",
-    "input_file": "TweetsTrainDev.csv",
+    "input_file": "TweetsTestSubSample.csv",
     "columns": {
         "list_type": "including",
         "columns": ["airline_sentiment", "text", "airline"]

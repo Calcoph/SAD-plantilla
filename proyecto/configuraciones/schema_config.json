@@ -48,10 +48,11 @@
             "items": { "type": "string" },
             "description": "Se aplicará tf_idf en estas columnas"
         },
+        "tf_idf_pickle_name": { "type": "string" },
         "stop_words": {
             "type": "object",
             "properties": {
-                "language": { "type": "string" },
+                "start_from_english": { "type": "string", "enum": ["true", "false"] },
                 "add_words": {
                     "type": "array",
                     "items": {

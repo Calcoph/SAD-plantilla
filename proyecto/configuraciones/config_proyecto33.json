@@ -28,7 +28,7 @@
                 "property": "f1-score",
                 "average": "macro"
             },
-            "name": "model_27.sav"
+            "name": "Random_forest_model_smol.sav"
         }
     ],
     "random_forest_config": {
@@ -56,6 +56,5 @@
             "metrics": ["sentiment_score"],
             "bin": "true"
         }
-    ],
-    "tf_idf_pickle_name": "tfidf_27.tfidf"
+    ]
 }

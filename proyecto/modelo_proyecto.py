@@ -19,9 +19,21 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import TypeVar, cast
 from sklearn.preprocessing import LabelEncoder
 import pickle
-import nltk
+#import nltk
+#nltk.download('punkt')
+#nltk.download('wordnet')
+#print(nltk.find('corpora/wordnet.zip'))
+#from nltk import word_tokenize
+#from nltk.stem import WordNetLemmatizer
 from emosent import get_emoji_sentiment_rank, EMOJI_SENTIMENT_DICT
-# TODO: utilizar embeddings
+from sklearn.feature_extraction import text
+"""
+class LemmaTokenizer(object):
+    def __init__(self):
+        self.wnl = WordNetLemmatizer()
+    def __call__(self, articles):
+        return [self.wnl.lemmatize(t) for t in word_tokenize(articles)]
+"""
 
 class Enum:
     pass
@@ -31,6 +43,29 @@ class MaximizeValue(Enum):
     RECALL = "recall"
     FSCORE = "f1-score"
     ACCURACY = "accuracy"
+
+class StopWords:
+    def __init__(
+            self,
+            start_from_english: bool,
+            add_words: list[str],
+            remove_words: list[str]
+        ) -> None:
+
+        self.start_from_english = start_from_english
+        self.add_words = add_words
+        self.remove_words = remove_words
+
+    def any_change(self) -> bool: 
+        ret = False
+        if self.start_from_english:
+            ret = True
+        if len(self.add_words) > 0:
+            ret = True
+        if len(self.remove_words) > 0:
+            ret = True
+
+        return ret
 
 class ImputeMethod(Enum):
     MEAN = "MEAN"
@@ -297,7 +332,10 @@ def preprocess(
         binning_arg,
         tf_idf_columns,
         drop_instances: list[DropInstance],
-        nlp_emoji: list[NlpEmoji]
+        nlp_emoji: list[NlpEmoji],
+        stop_words: StopWords,
+        testing: bool,
+        tf_idf_pickle_name: str
 ):
     """preprocesa los datos, tanto como para entrenar el modelo como para usarlo"""
 
@@ -350,8 +388,35 @@ def preprocess(
     for (index, feature) in enumerate(tf_idf_columns):
         #encoder = LabelEncoder()
         #encoded_feature = encoder.fit_transform(ml_dataset[feature])
-        tf = TfidfVectorizer()
-        text_tf = tf.fit_transform(ml_dataset[feature])
+        if testing:
+            tf = pickle.load(open(tf_idf_pickle_name, 'rb'))
+        else:
+            if stop_words.any_change():
+                if stop_words.start_from_english:
+                    final_stop_words = text.ENGLISH_STOP_WORDS
+                else:
+                    final_stop_words = frozenset()
+
+                final_stop_words = final_stop_words.union(stop_words.add_words)
+                final_stop_words = final_stop_words.difference(stop_words.remove_words)
+                final_stop_words = list(final_stop_words)
+                print(final_stop_words)
+                #tf = TfidfVectorizer(stop_words=final_stop_words, tokenizer=LemmaTokenizer()) # type: ignore
+                tf = TfidfVectorizer(stop_words=final_stop_words)
+            else:
+                #tf = TfidfVectorizer(tokenizer=LemmaTokenizer()) # type: ignore
+                tf = TfidfVectorizer()
+            tf.fit(ml_dataset[feature])
+            pickle.dump(tf, open(tf_idf_pickle_name,"wb"))
+
+        """
+        print("AAA")
+        print(tf.vocabulary_)
+        print("AAA")
+        print(tf.stop_words_)
+        print("AAA")
+        """
+        text_tf = tf.transform(ml_dataset[feature])
         #text_tf = pd.DataFrame(text_tf.toarray().transpose(),
         #           index=tf.get_feature_names_out())
         for (index2, column) in enumerate(text_tf.transpose()):
@@ -446,6 +511,8 @@ def run(
         nlp_emoji,
         drop_instances_train: list[DropInstance],
         drop_instances_dev: list[DropInstance],
+        stop_words: StopWords,
+        tf_idf_pickle_name: str
     ) -> str:
     """dada una configuración, entrena el mejor modelo de un algoritmo"""
 
@@ -473,11 +540,13 @@ def run(
         binning_arg,
         tf_idf_columns,
         drop_instances,
-        nlp_emoji
+        nlp_emoji,
+        stop_words,
+        False,
+        tf_idf_pickle_name
     )
     strat = ml_dataset[[TARGET]]
     (train, test) = train_test_split(ml_dataset,test_size=test_size,random_state=42,stratify=strat)
-
     if algorithm.drop:
         # Explica lo que se hace en este paso
         for feature in drop_rows_when_missing:
@@ -567,8 +636,9 @@ def run(
             exit(1)
 
     for column in drop_after_preprocess_columns:
-        del test[column]
-        del train[column]
+        print(f"dropping {column}")
+        test.drop(column, axis=1, inplace=True)
+        train.drop(column, axis=1, inplace=True)
 
     trainX = train.drop(TARGET, axis=1) # type: ignore
     #trainY = train[TARGET]
@@ -689,13 +759,16 @@ def run_random_forest(
     best_alg_params = (None, None)
     best_score = 0.0
     scores = []
+    iteration = 0
     for max_depth in range(algorithm.min_maxDepth, algorithm.max_maxDepth+1):
         for min_samples_leaf in range(algorithm.min_minSamplesLeaf, algorithm.max_minSamplesLeaf+1):
             clf = RandomForestClassifier(n_estimators=algorithm.n_estimators,
                 random_state=1337,
                 max_depth=max_depth,
-                min_samples_leaf=min_samples_leaf,
-                verbose=2)
+                min_samples_leaf=min_samples_leaf
+            )
+            iteration += 1
+            print(f"{iteration}, {max_depth}, {min_samples_leaf}")
 
             clf.class_weight = "balanced" # type: ignore
 
@@ -979,6 +1052,15 @@ def get_config(config):
         pass # rest_columns no está definido
     PREDICT_COLUMN = config["predict_column"]
 
+    stop_words = get_att_default(config, "stop_words", None)
+    if stop_words is not None:
+        start_from_english = json_bool(get_att_default(stop_words, "start_from_english", "false"))
+        add_words = get_att_default(stop_words, "add_words", [])
+        remove_words = get_att_default(stop_words, "remove_words", [])
+        stop_words = StopWords(start_from_english, add_words, remove_words)
+    else:
+        stop_words = StopWords(False, [], [])
+
     DROP_INSTANCES = get_att_default(config, "drop_instance", [])
     drop_instances = []
     possible_comparisons = [DropInstance.EQUAL, DropInstance.LESS, DropInstance.MORE, DropInstance.LESS_EQ, DropInstance.MORE_EQ, DropInstance.UNEQUAL]
@@ -1118,6 +1200,8 @@ def get_config(config):
     
     algorithms = config["algorithms"]
 
+    TF_IDF_PICKLE_NAME = get_att_default(config, "tf_idf_pickle_name", "default_tf_save.tfidf")
+
     return (
         algorithms,
         ml_dataset,
@@ -1142,6 +1226,8 @@ def get_config(config):
         drop_instances_dev,
         drop_instances_train,
         drop_instances_test,
+        stop_words,
+        TF_IDF_PICKLE_NAME
     )
 
 if __name__ == "__main__":
@@ -1185,6 +1271,8 @@ if __name__ == "__main__":
         DROP_INSTANCES_TRAIN,
         DROP_INSTANCES_DEV,
         _, # DROP_INSTANCES_TEST no hace falta porque aqui no hay test
+        STOP_WORDS,
+        TF_IDF_PICKLE_NAME
     ) = get_config(config)
 
     BINNING_ARG = None
@@ -1296,7 +1384,7 @@ if __name__ == "__main__":
             max_maxDepth = decision_tree_config["max_maxDepth"]
             min_minSamplesLeaf = decision_tree_config["min_minSamplesLeaf"]
             max_minSamplesLeaf = decision_tree_config["max_minSamplesLeaf"]
-            n_estimators = decision_tree_config["n_estimators"]
+            n_estimators = random_forest_config["n_estimators"]
             ALGORITHMS.append(RandomForestConfig(impute,
                 drop,
                 preprocess_categorical,
@@ -1380,6 +1468,8 @@ if __name__ == "__main__":
             NLP_EMOJI,
             DROP_INSTANCES_TRAIN,
             DROP_INSTANCES_DEV,
+            STOP_WORDS,
+            TF_IDF_PICKLE_NAME
         ))
     with open("datos_ultima_ejecucion.txt", "w") as f:
         for info in infos:
