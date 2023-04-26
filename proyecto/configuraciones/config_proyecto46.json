@@ -28,7 +28,7 @@
                 "property": "f1-score",
                 "average": "macro"
             },
-            "name": "NB_categorical_model.sav"
+            "name": "model_46.sav"
         }
     ],
     "naive_bayes_config": {
@@ -47,5 +47,6 @@
         "add_words": ["united", "unitedairlines"],
         "start_from_english": "false"
     },
+    "tf_idf_pickle_name": "tfidf_46.tfidf",
     "undersampling_ratio": "majority"
 }

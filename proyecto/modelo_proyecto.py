@@ -35,7 +35,7 @@ class LemmaTokenizer(object):
         return [self.wnl.lemmatize(t) for t in word_tokenize(articles)]
 """
 
-NEGATIVE_EVALUATION = False
+NEGATIVE_EVALUATION = True
 
 class Enum:
     pass
@@ -942,6 +942,12 @@ def evaluate(predictions, probas, testX, testY, target_map, test, maximize_value
     results_test = results_test.rename(columns= {TARGET: 'TARGET'})
 
     if NEGATIVE_EVALUATION:
+        print("fscore")
+        print(f1_score(testY, predictions, average=None)[2])
+        print("precision")
+        print(precision_score(testY, predictions, average=None)[2])
+        print("recall")
+        print(recall_score(testY, predictions, average=None)[2])
         if maximize_value == MaximizeValue.FSCORE:
             print(f1_score(testY, predictions, average=None))
             return f1_score(testY, predictions, average=None)[2] # type: ignore
@@ -955,6 +961,12 @@ def evaluate(predictions, probas, testX, testY, target_map, test, maximize_value
             print("método de maximizar no disponible")
             exit(1)
     else:
+        print("fscore")
+        print(f1_score(testY, predictions, average=maximize_average))
+        print("precision")
+        print(precision_score(testY, predictions, average=maximize_average))
+        print("recall")
+        print(recall_score(testY, predictions, average=maximize_average))
         if maximize_value == MaximizeValue.FSCORE:
             return f1_score(testY, predictions, average=maximize_average) # type: ignore
         elif maximize_value == MaximizeValue.PRECISION:

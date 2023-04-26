@@ -154,6 +154,10 @@ if __name__ == '__main__':
         drop = modelo_proyecto.json_bool(get_att_default(algorithm, "drop", "true"))
         impute = modelo_proyecto.json_bool(get_att_default(algorithm, "drop", "true"))
         rescale = modelo_proyecto.json_bool(get_att_default(algorithm, "rescale", "false"))
+    elif algorithm["algorithm"] == Algorithm.NaiveBayes:
+        drop = modelo_proyecto.json_bool(get_att_default(algorithm, "drop", "true"))
+        impute = modelo_proyecto.json_bool(get_att_default(algorithm, "drop", "true"))
+        rescale = modelo_proyecto.json_bool(get_att_default(algorithm, "rescale", "false"))
     else:
         print(f"No se reconoce el algoritmo {algorithm}")
         exit(1)
