@@ -1,0 +1,150 @@
+{
+    "type": "object",
+    "properties": {
+        "input_file": { "type": "string", "description": "Path del fichero .csv" },
+        "columns": {
+            "type": "object",
+            "properties": {
+                "list_type": { "type": "string", "enum": ["excluding", "including"] },
+                "columns": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                }
+            },
+            "description": "Todas las columnas del dataset que se tendrán en cuenta"
+        },
+        "punto_a_coma_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se cambian todos las comas de esta columna a puntos, por ejemplo: 3,57 -> 3.57"
+        },
+        "categorical_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se preprocesarán estas columnas como si fueran categoriales"
+        },
+        "text_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se preprocesarán estas columnas como si fueran texto"
+        },
+        "numerical_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se preprocesarán estas columnas como si fueran números"
+        },
+        "rest_columns": {
+            "type": "string",
+            "enum": ["categorical", "text", "numerical"],
+            "description": "Cómo tratar las columnas que no aparecen ni en categorical_columns, ni text_columns, ni numerical_columns."
+        },
+        "binning_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se hará binning en estas columnas"
+        },
+        "tf_idf_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Se aplicará tf_idf en estas columnas"
+        },
+        "tf_idf_pickle_name": { "type": "string" },
+        "stop_words": {
+            "type": "object",
+            "properties": {
+                "start_from_english": { "type": "string", "enum": ["true", "false"] },
+                "add_words": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "remove_words": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "drop_after_preprocess_columns": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Estas columnas no se tendrán cuenta para el modelo, pero sí para el preproceso"
+        },
+        "delete_emoji": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "column": { "type": "string" },
+                    "delete_emojis": { "type": "string", "enum": ["true", "false"] },
+                    "bin": { "type": "string", "enum": ["true", "false"] }
+                }
+            }
+        },
+        "drop_instance": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "columna": { "type": "string" },
+                    "comparison": { "type": "string", "enum": ["==", "<", ">", "<=", ">=", "!="], "description": "Ejemplo: si >= 8, todos los que sean >= 8 se van a droppear" },
+                    "value": { }
+                },
+                "required": ["columna", "comparison", "value"]
+            },
+            "description": "Se eliminarán instancias condicionalmente respecto a los valores de una columna"
+        },
+        "drop_rows_when_missing": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "impute_when_missing": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "feature": { "type": "string", "description": "nombre de la columna a imputar" },
+                    "method": { "type": "string", "enum": ["MEAN", "MEDIAN", "CREATE_CATEGORY", "MODE"], "description": "ignorará el valor de \"constant\"" },
+                    "constant": { "description": "no se tiene en cuenta si \"method\" existe" }
+                }
+            }
+        },
+        "impute_default": {
+            "type": "string",
+            "enum": ["MEAN", "MEDIAN", "CREATE_CATEGORY", "MODE"]
+        },
+        "rescale_features": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "feature": { "type": "string" },
+                    "method": { "type": "string", "enum": ["MINMAX", "AVGSTD"] }
+                }
+            }
+        },
+        "undersampling_ratio": { "type": "number" },
+        "oversampling_ratio": { "type": "number" },
+        "algorithm": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string",
+                    "enum": ["LDA"]
+                },
+                "impute": { "type": "string", "enum": ["true", "false"] },
+                "drop": { "type": "string", "enum": ["true", "false"] },
+                "preprocess_categorical": { "type": "string", "enum": ["true", "false"] },
+                "preprocess_text": { "type": "string", "enum": ["true", "false"] },
+                "preprocess_numerical": { "type": "string", "enum": ["true", "false"] },
+                "rescale": { "type": "string", "enum": ["true", "false"] },
+                "name": { "type": "string" }
+            },
+            "required": ["algorithm", "name"]
+        }
+    },
+    "required": ["input_file", "algorithm"],
+    "bin_tfidf": { "type": "string", "enum": ["true", "false"] }
+}
