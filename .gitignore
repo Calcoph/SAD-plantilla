@@ -20,6 +20,7 @@ proyecto/configuraciones/configuraciones2.tex
 !proyecto_clustering/
 !proyecto_clustering/crear_modelo_config.py
 !proyecto_clustering/crear_modelo_run.py
+!proyecto_clustering/prueba5_k.ipynb
 !proyecto_clustering/crear_modelo_run_5.py
 !proyecto_clustering/crear_modelo_run_6.py
 !proyecto_clustering/crear_modelo_run_7.py
@@ -31,7 +32,16 @@ proyecto/configuraciones/configuraciones2.tex
 !proyecto_clustering/crear_modelo_run_13.py
 !proyecto_clustering/crear_modelo_run_14.py
 !proyecto_clustering/crear_modelo_run_15.py
-!proyecto_clustering/prueba5_k.ipynb
+!proyecto_clustering/prueba16.ipynb
+!proyecto_clustering/prueba17.ipynb
+!proyecto_clustering/prueba18.ipynb
+!proyecto_clustering/prueba19.ipynb
+!proyecto_clustering/prueba20.ipynb
+!proyecto_clustering/prueba21.ipynb
+!proyecto_clustering/prueba22.ipynb
+!proyecto_clustering/prueba23.ipynb
+!proyecto_clustering/divisor_csv.py
+!proyecto_clustering/crear_modelo_run_24.py
 !proyecto_clustering/contador_de_problemas.py
 !proyecto_clustering/pruebas.md
 

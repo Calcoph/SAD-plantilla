@@ -25,11 +25,11 @@ if __name__ == "__main__":
     # Split the documents into tokens.
     tokenizer = RegexpTokenizer(r'\w+')
 
-    stopwords = STOPWORDS.union(frozenset(["ua", "we", "on", "me", "you"])).difference(["kg", "before", "over", "system", "serious", "off", "take", "nowhere", "found"])
+    stopwords = STOPWORDS.union(frozenset(["ua", "we", "on", "me", "you", "http", "co", "amp", "https"])).difference(["kg", "before", "over", "system", "serious", "off", "take", "nowhere", "found"])
     for idx in range(len(docs)):
         docs[idx] = docs[idx].lower()  # Convert to lowercase.
-        docs[idx] = remove_stopwords(docs[idx], STOPWORDS)
         docs[idx] = strip_punctuation(docs[idx])
+        docs[idx] = remove_stopwords(docs[idx], STOPWORDS)
         docs[idx] = tokenizer.tokenize(docs[idx])  # Split into words."""
 
     # Remove numbers, but not words that contain numbers.
@@ -142,11 +142,11 @@ if __name__ == "__main__":
     for (index, topic) in enumerate(topics):
         print(f"topic {index}")
         pprint(topic.topic)
-        """for twit in topic.twits:
+        for twit in topic.twits:
             try:
                 print(twit)
             except:
-                pass"""
+                pass
         pprint(topic.reasons[0:3])
 
     #diccionario = Dictionary(ml_dataset.Tokens)

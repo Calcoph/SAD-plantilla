@@ -13,3 +13,12 @@
 13: $11+alpha=0.1
 14: $11+alpha=0.5
 14: $11+alpha=0.0001
+16: barrido de hiperparámetro num docs (3-50, step=3) -> alrededor de 10 parece lo mejor
+17: barrido de hiperparámetro no_above (0.05-0.9, step=0.05) -> parece random, dejar en 0.2
+18: barrido alpha -> no se aprecia diferencia
+19: barrido beta -> no se aprecia diferencia
+20: barrido chunksize -> 2500
+21: barrido iterations -> no se aprecia diferencia
+22: barrido passes -> no se aprecia diferencia (espera a que acabe y luego lo confirmas)
+23: difference score barrido iterations -> no se aprecia diferencia
+24: $15+quitar http,co,amp,https
