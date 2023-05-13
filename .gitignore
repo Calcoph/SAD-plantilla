@@ -44,4 +44,5 @@ proyecto/configuraciones/configuraciones2.tex
 !proyecto_clustering/crear_modelo_run_24.py
 !proyecto_clustering/contador_de_problemas.py
 !proyecto_clustering/pruebas.md
-
+!proyecto_clustering/place_to_coord.py
+!proyecto_clustering/coord_separator.py
