@@ -46,3 +46,5 @@ proyecto/configuraciones/configuraciones2.tex
 !proyecto_clustering/pruebas.md
 !proyecto_clustering/place_to_coord.py
 !proyecto_clustering/coord_separator.py
+!proyecto_clustering/clases.py
+!proyecto_clustering/coord_group.py
